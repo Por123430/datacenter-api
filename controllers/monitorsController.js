@@ -1,9 +1,8 @@
 const asyncHandler = require('express-async-handler')
-const bcrypt = require('bcrypt')
 const Moniters = require('../models/Monitor')
 
 const getAllMonitors = asyncHandler (async (req, res) => {
-    const monitors = await Moniters.find().select().lean()
+    const monitors = await (await Moniters.find().select().lean()).reverse()
     if (!monitors?.length) {
         return res.status(400).json({ message: 'No monitors found'})
     }

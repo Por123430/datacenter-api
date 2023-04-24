@@ -5,6 +5,14 @@ const userSchema = new mongoose.Schema({
     type: String,
     require: true,
   },
+  firstname: {
+    type: String,
+    require: true,
+  },
+  lastname: {
+    type: String,
+    require: true,
+  },
   password: {
     type: String,
     require: true,
@@ -12,7 +20,7 @@ const userSchema = new mongoose.Schema({
   roles: [
     {
       type: String,
-      default: "emp",
+      default: "Officer",
     },
   ],
   active: {

@@ -12,4 +12,4 @@ const monitersSchema = new mongoose.Schema({
  
 });
 
-module.exports = mongoose.model("Moniters", monitersSchema);
+module.exports = mongoose.model("Monitors", monitersSchema);
