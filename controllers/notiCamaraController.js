@@ -11,9 +11,9 @@ const postNoti_camera = asyncHandler (async(req, res) => {
     const Noti_CameraObject = { camera, savetime}
     const noti_camera = await Noti_Camera.create(Noti_CameraObject)
     if (noti_camera) {
-        res.status(201).json({ message: `New temp ${camera} created`})
+        res.status(201).json({ message: `New camera ${camera} created`})
     } else {
-        res.status(400).json({ message: 'Invalid temp data received'})
+        res.status(400).json({ message: 'Invalid camera data received'})
     }
 })
 
