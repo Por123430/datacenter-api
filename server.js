@@ -31,7 +31,7 @@ app.use('/', require('./routes/root'))
 // const ImageModel = require("./models/Image")
 
 app.use('/auth', require('./routes/authRoutes'))
-app.use('/notiimage', require('./routes/imageRoutes'))
+
 
 app.use('/notiHumi', require('./routes/notiHumiRoutes'))
 app.use('/notiTemp', require('./routes/notiTempRoutes'))
