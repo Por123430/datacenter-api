@@ -6,19 +6,18 @@ const getSensor = asyncHandler (async (req, res) => {
     if (!sensor?.length) {
         return res.status(400).json({ message: 'No sensor found'})
     }
-    console.log(sensor)
     res.json(sensor)
 })
 
 const createSensor = asyncHandler (async(req, res) => {
-    const{ temp, moisture} = req.body
+    const{ temp, moisture, position} = req.body
 
     // Confirm data
-    if (!temp  || !moisture ) {
+    if (!temp  || !moisture || !position) {
         return res.status(400).json({ message: 'All fields are required'})
     }
 
-    const sensorObject = { temp, moisture }
+    const sensorObject = { temp, moisture , position}
 
     const sensor = await Sensor.create(sensorObject)
 
@@ -29,22 +28,34 @@ const createSensor = asyncHandler (async(req, res) => {
     }
 })
 const updateSensor = asyncHandler(async (req, res) => {
-    const { id, temp, moisture} = req.body
-
-    if(!id || !temp || !moisture ){
-        return res.status(400).json({ message: 'All fields are required'})
+    const { id, temp, moisture, position } = req.body;
+    if (!id || !temp || !moisture || !position) {
+        return res.status(400).json({ message: 'All fields are required' });
     }
 
-    const sensor = await Sensor.findById(id).exec()
+    try {
+        // Find the sensor document by ID
+        const sensor = await Sensor.findById(id).exec();
 
-    sensor.temp = temp
-    sensor.moisture = moisture
+        if (!sensor) {
+            return res.status(404).json({ message: 'Sensor not found' });
+        }
 
-    const updateSensor = await sensor.save()
+        // Update the fields
+        sensor.temp = temp;
+        sensor.moisture = moisture;
+        sensor.position = position;
 
-    res.json({ message: `${updateSensor.temp} updated`})
+        // Save the updated sensor document
+        await sensor.save();
 
-})
+        res.json({ message: `${sensor.model} updated` });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Internal Server Error' });
+    }
+});
+
 
 module.exports = {
     getSensor,

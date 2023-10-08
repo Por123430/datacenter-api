@@ -79,7 +79,6 @@ const searchNotiTemp = asyncHandler(async (req, res) => {
   const monitors = await (await Noti_Temp.aggregate(piplines)).reverse();
   res.json(monitors);
 });
-
 const chartFilterByWeek = asyncHandler(async (req, res) => {
   const now = new Date();
   const startDate = new Date(now);
@@ -88,42 +87,48 @@ const chartFilterByWeek = asyncHandler(async (req, res) => {
 
   const endDate = new Date(startDate);
   endDate.setDate(startDate.getDate() + 7);
-  const weeks = [
-    "Sunday",
-    "Monday",
-    "Tuesday ",
-    "Wednesday",
-    "Thursday",
-    "Friday",
-    "Saturday",
-  ];
+  const startOfWeek = new Date(startDate);
+  const endOfWeek = new Date(endDate);
   const pipelines = [];
-  for (let i = 0; i < weeks.length; i++) {
-    const day = weeks[i];
-
+  for (let i = 0; i < 7; i++) {
     const pipeline = [
       {
         $match: {
           createdAt: {
-            $gte: startDate,
-            $lte: endDate,
+            $gte: startOfWeek,
+            $lt: endOfWeek, // Use $lt for exclusive end date
           },
           $expr: { $eq: [{ $dayOfWeek: "$createdAt" }, i + 1] }, // Filter by the day of the week
         },
       },
-      { $group: { _id: null, count: { $sum: 1 } } },
+      { 
+        $group: { 
+          _id: null, 
+          count: { $sum: 1 },
+          time: { $addToSet: "$createdAt" }, // Collect unique savetime values
+        } 
+      },
     ];
     const monitors = await (await Noti_Temp.aggregate(pipeline)).reverse();
     const Count = monitors.length > 0 ? monitors[0].count : 0;
+    const dates = monitors.length > 0 ? monitors[0].time : []; // Use all unique savetime values
     const report = {
-      day,
+      day: i + 1, // Day of the week (1 for Sunday, 2 for Monday, etc.)
+      dates,
       Count,
     };
 
     pipelines.push(report);
+
+    // Move to the next week
+    startDate.setDate(startDate.getDate() + 7);
+    endDate.setDate(endDate.getDate() + 7);
   }
   res.json(pipelines);
 });
+
+
+
 
 const chartFilterByDay = asyncHandler(async (req, res) => {
   const now = new Date();
