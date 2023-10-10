@@ -22,7 +22,7 @@ const getAllNoti_camera = asyncHandler (async (req, res) => {
     if (!noti_camera?.length) {
         return res.status(400).json({ message: 'No noti_camera found'})
     }
-    //console.log(monitors)
+  
     res.json(noti_camera)
 })
 
@@ -57,12 +57,14 @@ const chartFilterByWeek = asyncHandler(async (req, res) => {
       },
     ];
     const monitors = await (await Noti_Camera.aggregate(pipeline)).reverse();
+    
     const Count = monitors.length > 0 ? monitors[0].count : 0;
     const dates = monitors.length > 0 ? monitors[0].time : []; // Use all unique savetime values
     const report = {
-      day: i + 1, // Day of the week (1 for Sunday, 2 for Monday, etc.)
+      day: startOfWeek.getDate() + i, // Day of the week (1 for Sunday, 2 for Monday, etc.)
       dates,
       Count,
+      value: Count
     };
 
     pipelines.push(report);
@@ -75,41 +77,76 @@ const chartFilterByWeek = asyncHandler(async (req, res) => {
 });
 
 
-  const chartFilterByDay = asyncHandler(async (req, res) => {
-    const now = new Date();
-    const startDate = new Date(now.getFullYear(), now.getMonth(), 1); // First day of the current month
-    const endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0); // Last day of the current month
-  
-    const daysInMonth = endDate.getDate(); // Number of days in the current month
-    const pipelines = [];
-  
-    for (let day = 1; day <= daysInMonth; day++) {
-      const pipeline = [
-        {
-          $match: {
-            createdAt: {
-              $gte: new Date(now.getFullYear(), now.getMonth(), day, 0, 0, 0, 0), // Start of the day
-              $lte: new Date(now.getFullYear(), now.getMonth(), day, 23, 59, 59, 999), // End of the day
-            },
+const chartFilterByDay = asyncHandler(async (req, res) => {
+  const now = new Date();
+  const startDate = new Date(now.getFullYear(), now.getMonth(), 1); // First day of the current month
+  const endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0); // Last day of the current month
+
+  const daysInMonth = endDate.getDate(); // Number of days in the current month
+  const promises = [];
+
+  for (let day = 1; day <= daysInMonth; day++) {
+    const dayStart = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      day,
+      0,
+      0,
+      0,
+      0
+    );
+    const dayEnd = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      day,
+      23,
+      59,
+      59,
+      999
+    );
+
+    const pipeline = [
+      {
+        $match: {
+          createdAt: {
+            $gte: dayStart,
+            $lte: dayEnd,
           },
         },
-        { $group: { _id: null, count: { $sum: 1 } ,time: { $push: "$savetime" },  } },
-      ];
-  
-      const monitors = await (await Noti_Camera.aggregate(pipeline)).reverse();
+      },
+      {
+        $group: {
+          _id: null,
+          count: { $sum: 1 },
+          time: { $push: "$savetime" },
+          
+        },
+      },
+    ];
+
+    promises.push(Noti_Camera.aggregate(pipeline));
+  }
+
+  try {
+    const results = await Promise.all(promises);
+    const reports = results.map((monitors, i) => {
       const Count = monitors.length > 0 ? monitors[0].count : 0;
       const dates = monitors.length > 0 ? monitors[0].time[0] : [];
-      const report = {
-        day,
+      return {
+        day: i + 1,
         dates,
         Count,
+        value:Count,
       };
-  
-      pipelines.push(report);
-    }
-  
-    res.json(pipelines);
-  });
+    });
+
+    res.json(reports);
+  } catch (error) {
+    // Handle any errors that occur during the aggregation.
+    console.error(error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
 
 
   const chartFilterByMonth = asyncHandler(async (req, res) => {
@@ -143,6 +180,7 @@ const chartFilterByWeek = asyncHandler(async (req, res) => {
       const report = {
         month,
         Count,
+        value: Count
       };
   
       pipelines.push(report);

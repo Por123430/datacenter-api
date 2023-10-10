@@ -51,7 +51,7 @@ const getAllnoti_Humi = asyncHandler (async (req, res) => {
     if (!noti_humi?.length) {
         return res.status(400).json({ message: 'No noti_humi found'})
     }
-    //console.log(monitors)
+    
     res.json(noti_humi)
 })
 
@@ -82,16 +82,19 @@ const chartFilterByWeek = asyncHandler(async (req, res) => {
           _id: null, 
           count: { $sum: 1 },
           time: { $addToSet: "$createdAt" }, // Collect unique savetime values
+          value: {$first:"$humidity"}
         } 
       },
     ];
     const monitors = await (await Noti_Humi.aggregate(pipeline)).reverse();
+    const value = monitors.length > 0 ? monitors[0].value : 0;
     const Count = monitors.length > 0 ? monitors[0].count : 0;
     const dates = monitors.length > 0 ? monitors[0].time : []; // Use all unique savetime values
     const report = {
-      day: i + 1, // Day of the week (1 for Sunday, 2 for Monday, etc.)
+      day: startOfWeek.getDate() + i, // Day of the week (1 for Sunday, 2 for Monday, etc.)
       dates,
       Count,
+      value
     };
 
     pipelines.push(report);
@@ -103,44 +106,77 @@ const chartFilterByWeek = asyncHandler(async (req, res) => {
   res.json(pipelines);
 });
 
-
-
   const chartFilterByDay = asyncHandler(async (req, res) => {
     const now = new Date();
     const startDate = new Date(now.getFullYear(), now.getMonth(), 1); // First day of the current month
     const endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0); // Last day of the current month
   
     const daysInMonth = endDate.getDate(); // Number of days in the current month
-    const pipelines = [];
+    const promises = [];
   
     for (let day = 1; day <= daysInMonth; day++) {
+      const dayStart = new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        day,
+        0,
+        0,
+        0,
+        0
+      );
+      const dayEnd = new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        day,
+        23,
+        59,
+        59,
+        999
+      );
+  
       const pipeline = [
         {
           $match: {
             createdAt: {
-              $gte: new Date(now.getFullYear(), now.getMonth(), day, 0, 0, 0, 0), // Start of the day
-              $lte: new Date(now.getFullYear(), now.getMonth(), day, 23, 59, 59, 999), // End of the day
+              $gte: dayStart,
+              $lte: dayEnd,
             },
           },
         },
-        { $group: { _id: null, count: { $sum: 1 } ,time: { $push: "$savetime" },  } },
+        {
+          $group: {
+            _id: null,
+            count: { $sum: 1 },
+            time: { $push: "$savetime" },
+            value: { $first: "$humidity" },
+          },
+        },
       ];
   
-      const monitors = await (await Noti_Humi.aggregate(pipeline)).reverse();
-      const Count = monitors.length > 0 ? monitors[0].count : 0;
-      const dates = monitors.length > 0 ? monitors[0].time[0] : [];
-      const report = {
-        day,
-        dates,
-        Count,
-      };
-  
-      pipelines.push(report);
+      promises.push(Noti_Humi.aggregate(pipeline));
     }
   
-    res.json(pipelines);
+    try {
+      const results = await Promise.all(promises);
+      const reports = results.map((monitors, i) => {
+        const Count = monitors.length > 0 ? monitors[0].count : 0;
+        const value = monitors.length > 0 ? monitors[0].value : 0;
+        const dates = monitors.length > 0 ? monitors[0].time[0] : [];
+        return {
+          day: i + 1,
+          dates,
+          Count,
+          value,
+        };
+      });
+  
+      res.json(reports);
+    } catch (error) {
+      // Handle any errors that occur during the aggregation.
+      console.error(error);
+      res.status(500).json({ error: "Internal Server Error" });
+    }
   });
-
 
   const chartFilterByMonth = asyncHandler(async (req, res) => {
     const currentYear = new Date().getFullYear();
@@ -166,13 +202,15 @@ const chartFilterByWeek = asyncHandler(async (req, res) => {
         { $match: { $expr: { $eq: [{ $month: "$createdAt" }, i + 1] } } },
         { $match: { $expr: { $eq: [{ $year: "$createdAt" }, currentYear] } } },
   
-        { $group: { _id: null, count: { $sum: 1 } } },
+        { $group: { _id: null, count: { $sum: 1 } ,value: {$first:"$humidity"} } },
       ];
       const monitors = await (await Noti_Humi.aggregate(pipeline)).reverse();
       const Count = monitors.length > 0 ? monitors[0].count : 0;
+      const value = monitors.length > 0 ? monitors[0].value : 0;
       const report = {
         month,
         Count,
+        value
       };
   
       pipelines.push(report);
