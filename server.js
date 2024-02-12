@@ -42,6 +42,7 @@ app.use('/sensor',require('./routes/sonserRoutes'))
 //app.use('/', require('./routes/root'))
 app.use('/users', require('./routes/userRoutes'))
 app.use('/moniters', require('./routes/monitorRoutes'))
+app.use('/music', require('./routes/musicRoutes'))
 
 app.all('*', (req, res) =>{
     res.status(404)
