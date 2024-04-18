@@ -1,5 +1,5 @@
 const User = require("../models/User");
-const Note = require("../models/Note");
+
 const asyncHandler = require("express-async-handler");
 const bcrypt = require("bcrypt");
 
@@ -8,13 +8,13 @@ const getAllUsers = asyncHandler(async (req, res) => {
   if (!users?.length) {
     return res.status(400).json({ message: "No users found" });
   }
-  console.log(users);
+ 
   res.json(users);
 });
 
 const createNewUser = asyncHandler(async (req, res) => {
   const { username, firstname, lastname, password, roles } = req.body;
-
+console.log({ username, firstname, lastname, password, roles });
   // Confirm data
   if (
     !username ||

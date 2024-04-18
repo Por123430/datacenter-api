@@ -31,17 +31,18 @@ app.use('/', require('./routes/root'))
 // const ImageModel = require("./models/Image")
 
 app.use('/auth', require('./routes/authRoutes'))
-app.use('/notiimage', require('./routes/imageRoutes'))
+
 
 app.use('/notiHumi', require('./routes/notiHumiRoutes'))
 app.use('/notiTemp', require('./routes/notiTempRoutes'))
 app.use('/notiLight', require('./routes/notiLightRoutes'))
-// app.use('/notiCamera', require('./routes/notiCameraRoutes'))
+app.use('/notiCamera', require('./routes/notiCameraRoutes'))
 app.use('/sensor',require('./routes/sonserRoutes'))
 // app.use('/activity', require('./routes/activityRoutes'))
 //app.use('/', require('./routes/root'))
 app.use('/users', require('./routes/userRoutes'))
 app.use('/moniters', require('./routes/monitorRoutes'))
+app.use('/music', require('./routes/musicRoutes'))
 
 app.all('*', (req, res) =>{
     res.status(404)
