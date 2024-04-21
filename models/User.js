@@ -13,6 +13,9 @@ const userSchema = new mongoose.Schema({
     type: String,
     require: true,
   },
+  line: {
+    type: String,
+  },
   password: {
     type: String,
     require: true,
@@ -26,6 +29,10 @@ const userSchema = new mongoose.Schema({
   active: {
     type: Boolean,
     default: true,
+  },
+  isDelete: {
+    type: Boolean,
+    default: false,
   },
 });
 

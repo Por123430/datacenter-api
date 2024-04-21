@@ -1,7 +1,8 @@
 const allowedOrigins = [
-    'https://datacentersecurity.onrender.com/'
+    // 'http://localhost:3000',
     // 'https://www.dandrepairshop.com',
     // 'https://dandrepairshop.com'
+    'https://datacentersecurity.onrender.com'
 ]
 
 module.exports = allowedOrigins

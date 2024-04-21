@@ -13,6 +13,10 @@ const sensorSchema = new mongoose.Schema({
     type: String,
     require: true,
   },
+  position: {
+    type: String,
+    require: true,
+  },
  
 });
 

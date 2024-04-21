@@ -11,6 +11,14 @@ router.route('/')
 // router.route('/postNoti_humi')
 //     .post(notificationController.postNoti_humi)
 
+router.route("/chartByWeek").get(notiCameraController.chartFilterByWeek);
+
+router.route('/chartByDay')
+    .get(notiCameraController.chartFilterByDay)
+
+
+router.route('/chartByMonth')
+    .get(notiCameraController.chartFilterByMonth)
 
 
 module.exports = router
