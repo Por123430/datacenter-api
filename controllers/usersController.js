@@ -57,8 +57,6 @@ const createNewUser = asyncHandler(async (req, res) => {
 const updateUser = asyncHandler(async (req, res) => {
   const { id, username, firstname, lastname, line, roles, active, password } =
     req.body;
-
-  //Confirm data
   if (
     !id ||
     !username ||
