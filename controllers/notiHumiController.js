@@ -25,8 +25,12 @@ const filterNoti_humiByDay = asyncHandler(async (req, res) => {
     try {
         const currentDay = new Date().getDate();
         const currentMonth = new Date().getMonth() + 1;
-        
-      const pipelines = [
+        const currentYear = new Date().getFullYear();
+        const pipelines = [
+          {
+            $match: { $expr: { $eq: [{ $year: "$createdAt" }, currentYear] } },
+          },
+      
         {
              $match: { $expr: { $eq: [{ $dayOfMonth: "$createdAt" }, currentDay] } } 
         },

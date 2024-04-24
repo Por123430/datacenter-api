@@ -1,30 +1,64 @@
-const asyncHandler = require('express-async-handler')
-const Noti_Camera = require('../models/Noti_Camera')
-const postNoti_camera = asyncHandler (async(req, res) => {
-    const date = new Date()
-    const time = new Intl.DateTimeFormat('en-Us', { dateStyle: 'short',timeStyle: 'short'}).format(date)
-    const{camera} = req.body
-    if(!camera){
-        return res.status(400).json({message: 'All fields are required'})
-    }
-    savetime = time
-    const Noti_CameraObject = { camera, savetime}
-    const noti_camera = await Noti_Camera.create(Noti_CameraObject)
-    if (noti_camera) {
-        res.status(201).json({ message: `New camera ${camera} created`})
-    } else {
-        res.status(400).json({ message: 'Invalid camera data received'})
-    }
-})
+const asyncHandler = require("express-async-handler");
+const Noti_Camera = require("../models/Noti_Camera");
+const postNoti_camera = asyncHandler(async (req, res) => {
+  const date = new Date();
+  const time = new Intl.DateTimeFormat("en-Us", {
+    dateStyle: "short",
+    timeStyle: "short",
+  }).format(date);
+  const { camera } = req.body;
+  if (!camera) {
+    return res.status(400).json({ message: "All fields are required" });
+  }
+  savetime = time;
+  const Noti_CameraObject = { camera, savetime };
+  const noti_camera = await Noti_Camera.create(Noti_CameraObject);
+  if (noti_camera) {
+    res.status(201).json({ message: `New camera ${camera} created` });
+  } else {
+    res.status(400).json({ message: "Invalid camera data received" });
+  }
+});
 
-const getAllNoti_camera = asyncHandler (async (req, res) => {
-    const noti_camera = await (await Noti_Camera.find().select().lean()).reverse()
-    if (!noti_camera?.length) {
-        return res.status(400).json({ message: 'No noti_camera found'})
-    }
-  
-    res.json(noti_camera)
-})
+const filterNoti_motionByDay = asyncHandler(async (req, res) => {
+  try {
+    const currentDay = new Date().getDate();
+    const currentMonth = new Date().getMonth() + 1;
+    const currentYear = new Date().getFullYear();
+    const pipelines = [
+      {
+        $match: { $expr: { $eq: [{ $year: "$createdAt" }, currentYear] } },
+      },
+    
+      {
+        $match: { $expr: { $eq: [{ $dayOfMonth: "$createdAt" }, currentDay] } },
+      },
+      {
+        $match: { $expr: { $eq: [{ $month: "$createdAt" }, currentMonth] } },
+      },
+    ];
+    const noti_motion = await Noti_Camera.aggregate(pipelines).sort({
+      createdAt: -1,
+    });
+    const count = await (await Noti_Camera.aggregate(pipelines)).length;
+
+    res.json({ noti_motion, count });
+  } catch (error) {
+    console.error("Error fetching filterNoti_light:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+const getAllNoti_camera = asyncHandler(async (req, res) => {
+  const noti_camera = await (
+    await Noti_Camera.find().select().lean()
+  ).reverse();
+  if (!noti_camera?.length) {
+    return res.status(400).json({ message: "No noti_camera found" });
+  }
+
+  res.json(noti_camera);
+});
 
 const chartFilterByWeek = asyncHandler(async (req, res) => {
   const now = new Date();
@@ -48,23 +82,23 @@ const chartFilterByWeek = asyncHandler(async (req, res) => {
           $expr: { $eq: [{ $dayOfWeek: "$createdAt" }, i + 1] }, // Filter by the day of the week
         },
       },
-      { 
-        $group: { 
-          _id: null, 
+      {
+        $group: {
+          _id: null,
           count: { $sum: 1 },
           time: { $addToSet: "$createdAt" }, // Collect unique savetime values
-        } 
+        },
       },
     ];
     const monitors = await (await Noti_Camera.aggregate(pipeline)).reverse();
-    
+
     const Count = monitors.length > 0 ? monitors[0].count : 0;
     const dates = monitors.length > 0 ? monitors[0].time : []; // Use all unique savetime values
     const report = {
       day: startOfWeek.getDate() + i, // Day of the week (1 for Sunday, 2 for Monday, etc.)
       dates,
       Count,
-      value: Count
+      value: Count,
     };
 
     pipelines.push(report);
@@ -75,7 +109,6 @@ const chartFilterByWeek = asyncHandler(async (req, res) => {
   }
   res.json(pipelines);
 });
-
 
 const chartFilterByDay = asyncHandler(async (req, res) => {
   const now = new Date();
@@ -119,7 +152,6 @@ const chartFilterByDay = asyncHandler(async (req, res) => {
           _id: null,
           count: { $sum: 1 },
           time: { $push: "$savetime" },
-          
         },
       },
     ];
@@ -136,7 +168,7 @@ const chartFilterByDay = asyncHandler(async (req, res) => {
         day: i + 1,
         dates,
         Count,
-        value:Count,
+        value: Count,
       };
     });
 
@@ -148,50 +180,50 @@ const chartFilterByDay = asyncHandler(async (req, res) => {
   }
 });
 
+const chartFilterByMonth = asyncHandler(async (req, res) => {
+  const currentYear = new Date().getFullYear();
+  const months = [
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
+  ];
+  const pipelines = [];
+  for (let i = 0; i < months.length; i++) {
+    const month = months[i];
 
-  const chartFilterByMonth = asyncHandler(async (req, res) => {
-    const currentYear = new Date().getFullYear();
-    const months = [
-      "January",
-      "February",
-      "March",
-      "April",
-      "May",
-      "June",
-      "July",
-      "August",
-      "September",
-      "October",
-      "November",
-      "December",
+    const pipeline = [
+      { $match: { $expr: { $eq: [{ $month: "$createdAt" }, i + 1] } } },
+      { $match: { $expr: { $eq: [{ $year: "$createdAt" }, currentYear] } } },
+
+      { $group: { _id: null, count: { $sum: 1 } } },
     ];
-    const pipelines = [];
-    for (let i = 0; i < months.length; i++) {
-      const month = months[i];
-  
-      const pipeline = [
-        { $match: { $expr: { $eq: [{ $month: "$createdAt" }, i + 1] } } },
-        { $match: { $expr: { $eq: [{ $year: "$createdAt" }, currentYear] } } },
-  
-        { $group: { _id: null, count: { $sum: 1 } } },
-      ];
-      const monitors = await (await Noti_Camera.aggregate(pipeline)).reverse();
-      const Count = monitors.length > 0 ? monitors[0].count : 0;
-      const report = {
-        month,
-        Count,
-        value: Count
-      };
-  
-      pipelines.push(report);
-    }
-    res.json(pipelines);
-  });
+    const monitors = await (await Noti_Camera.aggregate(pipeline)).reverse();
+    const Count = monitors.length > 0 ? monitors[0].count : 0;
+    const report = {
+      month,
+      Count,
+      value: Count,
+    };
+
+    pipelines.push(report);
+  }
+  res.json(pipelines);
+});
 
 module.exports = {
-    postNoti_camera,
-    getAllNoti_camera,
-    chartFilterByWeek,
-    chartFilterByDay,
-    chartFilterByMonth
-}
+  postNoti_camera,
+  getAllNoti_camera,
+  filterNoti_motionByDay,
+  chartFilterByWeek,
+  chartFilterByDay,
+  chartFilterByMonth,
+};

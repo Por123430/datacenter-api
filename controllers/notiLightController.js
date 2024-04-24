@@ -21,8 +21,11 @@ const filterNoti_lightByDay = asyncHandler(async (req, res) => {
     try {
         const currentDay = new Date().getDate();
         const currentMonth = new Date().getMonth() + 1;
-        
+        const currentYear = new Date().getFullYear();
       const pipelines = [
+        {
+          $match: { $expr: { $eq: [{ $year: "$createdAt" }, currentYear] } },
+        },
         {
              $match: { $expr: { $eq: [{ $dayOfMonth: "$createdAt" }, currentDay] } } 
         },

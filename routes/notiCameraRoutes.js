@@ -6,7 +6,7 @@ router.route('/')
     .get(notiCameraController.getAllNoti_camera)
     .post(notiCameraController.postNoti_camera)
 
-
+    router.route("/filter").get(notiCameraController.filterNoti_motionByDay);
 
 // router.route('/postNoti_humi')
 //     .post(notificationController.postNoti_humi)
